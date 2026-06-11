@@ -31,3 +31,40 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+### IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+### VSCode
+.vscode/
+
+### Logs
+logs/
+*.log
+
+### OS
+.DS_Store
+Thumbs.db
+
+### Environment
+.env
+.env.*
+
+### Application config local
+application-local.yml
+application-local.properties
+
+### Secrets
+*.jks
+*.p12
+*.pfx
+
+### Docker
+docker-data/
