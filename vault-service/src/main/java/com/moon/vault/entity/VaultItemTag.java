@@ -1,4 +1,4 @@
-package com.moon.vault_service.entity;
+package com.moon.vault.entity;
 
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;

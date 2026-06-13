@@ -1,4 +1,4 @@
-package com.moon.vault_service;
+package com.moon.vault;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

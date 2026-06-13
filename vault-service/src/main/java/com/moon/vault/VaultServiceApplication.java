@@ -1,4 +1,4 @@
-package com.moon.vault_service;
+package com.moon.vault;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

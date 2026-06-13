@@ -1,4 +1,4 @@
-package com.moon.vault_service.entity;
+package com.moon.vault.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
