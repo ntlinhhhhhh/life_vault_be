@@ -234,7 +234,7 @@ Trong đó:
                 v
 +----------------------------+
 |       Personal Vault DB    |
-| MySQL/PostgreSQL           |
+| MariaDB                    |
 +----------------------------+
                 |
                 v
@@ -322,7 +322,7 @@ Vault tables:
 | api-gateway | 9000 |
 | auth-service | 5001 |
 | vault-service | 5002 |
-| MySQL | 3306 |
+| MariaDB | 3306 |
 | Redis | 6379 |
 
 ---
@@ -366,7 +366,7 @@ personal-life-vault
 | `.gitignore` | Bỏ qua target, .env, IDE files |
 | `.env` | Biến môi trường local, không commit |
 | `.env.example` | Mẫu biến môi trường, được commit |
-| `docker-compose.yml` | Chạy MySQL, Redis |
+| `docker-compose.yml` | Chạy MariaDB, Redis |
 | `README.md` | Mô tả project |
 | `docs/srs.md` | Tài liệu SRS này |
 | `docs/erd.md` | Thiết kế ERD |
@@ -2536,7 +2536,7 @@ Việc cần làm:
 5. Tạo module `vault-service`.
 6. Tạo `.gitignore`.
 7. Tạo `.env.example`.
-8. Tạo Docker Compose MySQL + Redis.
+8. Tạo Docker Compose MariaDB + Redis.
 9. Tạo README ban đầu.
 
 Kết quả:
@@ -2777,7 +2777,7 @@ App chạy end-to-end
 
 | Câu hỏi | Khuyến nghị |
 |---|---|
-| Dùng MySQL hay PostgreSQL? | MySQL dễ bắt đầu; PostgreSQL tốt nếu dùng JSONB |
+| Dùng MariaDB hay PostgreSQL? | MariaDB dễ bắt đầu và tương thích tốt với schema hiện tại; PostgreSQL tốt nếu dùng JSONB |
 | Có dùng master password không? | MVP dùng Vault PIN + re-auth trước |
 | Mã hóa toàn bộ file không? | File SECRET/CRITICAL nên mã hóa |
 | Có cho lưu mã PIN ngân hàng không? | Cho phép nhưng cảnh báo CRITICAL |
