@@ -1,0 +1,136 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: life-vault-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_PASSWORD:-123456}
+      MARIADB_DATABASE: ${DB_NAME:-life_vault_db}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: life-vault-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: life-vault-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "${MINIO_API_PORT:-9100}:9000"
+      - "${MINIO_CONSOLE_PORT:-9101}:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: life-vault-minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      VAULT_S3_BUCKET: ${VAULT_S3_BUCKET:-life-vault-files}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\"; do sleep 2; done;
+      mc mb --ignore-existing local/\"$${VAULT_S3_BUCKET}\";
+      mc anonymous set none local/\"$${VAULT_S3_BUCKET}\";
+      "
+
+  auth-service:
+    build:
+      context: ./auth-service
+    image: life-vault-auth-service:local
+    container_name: life-vault-auth-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_URL: "jdbc:mariadb://mariadb:3306/${DB_NAME:-life_vault_db}?createDatabaseIfNotExist=true&useSsl=false&gssapiMechanisms=none"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    ports:
+      - "5001:5001"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  vault-service:
+    build:
+      context: ./vault-service
+    image: life-vault-vault-service:local
+    container_name: life-vault-vault-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_URL: "jdbc:mariadb://mariadb:3306/${DB_NAME:-life_vault_db}?createDatabaseIfNotExist=true&useSsl=false&gssapiMechanisms=none"
+      VAULT_STORAGE_TYPE: s3
+      VAULT_S3_ENDPOINT: http://minio:9000
+      VAULT_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      VAULT_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    ports:
+      - "5002:5002"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    image: life-vault-api-gateway:local
+    container_name: life-vault-api-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:5001
+      VAULT_SERVICE_URL: http://vault-service:5002
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    ports:
+      - "9000:9000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      vault-service:
+        condition: service_started
+
+volumes:
+  mariadb_data:
+  redis_data:
+  minio_data:

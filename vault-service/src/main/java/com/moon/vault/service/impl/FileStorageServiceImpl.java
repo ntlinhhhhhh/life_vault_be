@@ -12,6 +12,7 @@ import com.moon.vault.security.JwtService;
 import com.moon.vault.service.AuditLogService;
 import com.moon.vault.service.EncryptionService;
 import com.moon.vault.service.FileStorageService;
+import com.moon.vault.service.ObjectStorageService;
 import com.moon.vault.util.ChecksumUtil;
 import com.moon.vault.util.CodeGenerator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -42,9 +42,7 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final EncryptionService encryptionService;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
-
-    @Value("${vault.storage.root:./storage/vault-files}")
-    private String storageRoot;
+    private final ObjectStorageService objectStorageService;
 
     @Value("${vault.storage.max-file-size-bytes:10485760}")
     private long maxFileSizeBytes;
@@ -71,10 +69,9 @@ public class FileStorageServiceImpl implements FileStorageService {
 
             String fileCode = CodeGenerator.generate(AppConstants.FILE_CODE_PREFIX);
             String storedFilename = fileCode + "-" + UUID.randomUUID();
-            Path userDir = Path.of(storageRoot, userCode, itemCode);
-            Files.createDirectories(userDir);
-            Path filePath = userDir.resolve(storedFilename);
-            Files.write(filePath, storedBytes);
+            String objectKey = userCode + "/" + itemCode + "/" + storedFilename;
+            String contentType = file.getContentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : file.getContentType();
+            objectStorageService.put(objectKey, storedBytes, contentType);
 
             VaultFile vaultFile = new VaultFile();
             vaultFile.setFileCode(fileCode);
@@ -82,8 +79,8 @@ public class FileStorageServiceImpl implements FileStorageService {
             vaultFile.setUserCode(userCode);
             vaultFile.setOriginalFilename(safeFilename(file.getOriginalFilename()));
             vaultFile.setStoredFilename(storedFilename);
-            vaultFile.setFilePath(filePath.toString());
-            vaultFile.setMimeType(file.getContentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : file.getContentType());
+            vaultFile.setFilePath(objectKey);
+            vaultFile.setMimeType(contentType);
             vaultFile.setFileSize(file.getSize());
             vaultFile.setChecksum(checksum);
             vaultFile.setEncrypted(encrypt);
@@ -120,7 +117,7 @@ public class FileStorageServiceImpl implements FileStorageService {
             jwtService.validateReauthToken(reauthToken, userCode);
         }
         try {
-            byte[] storedBytes = Files.readAllBytes(Path.of(vaultFile.getFilePath()));
+            byte[] storedBytes = objectStorageService.get(vaultFile.getFilePath());
             byte[] responseBytes = Boolean.TRUE.equals(vaultFile.getEncrypted())
                     ? encryptionService.decryptBytes(storedBytes, vaultFile.getEncryptionIv())
                     : storedBytes;
