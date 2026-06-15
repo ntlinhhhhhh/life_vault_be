@@ -1,4 +1,4 @@
-﻿package com.moon.auth.util;
+package com.moon.auth.util;
 
 import java.util.UUID;
 
@@ -11,4 +11,3 @@ public final class CodeGenerator {
         return prefix + "-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
     }
 }
-

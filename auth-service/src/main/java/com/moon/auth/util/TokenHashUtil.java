@@ -1,4 +1,4 @@
-﻿package com.moon.auth.util;
+package com.moon.auth.util;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,4 +23,3 @@ public final class TokenHashUtil {
         }
     }
 }
-

@@ -1,4 +1,4 @@
-﻿package com.moon.auth.dto;
+package com.moon.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,4 +27,3 @@ public class ApiResponse<T> {
         return new ApiResponse<>(code, message, null);
     }
 }
-

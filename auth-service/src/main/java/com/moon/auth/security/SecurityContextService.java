@@ -1,7 +1,8 @@
-﻿package com.moon.auth.security;
+package com.moon.auth.security;
 
+import com.moon.auth.common.exception.ErrorCode;
+import com.moon.auth.common.exception.ErrorMessage;
 import com.moon.auth.exception.AuthException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class SecurityContextService {
     public SecurityUser currentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
-            throw new AuthException("UNAUTHORIZED", "Authentication is required", HttpStatus.UNAUTHORIZED);
+            throw AuthException.unauthorized(ErrorCode.UNAUTHORIZED, ErrorMessage.UNAUTHORIZED);
         }
         return securityUser;
     }
@@ -21,4 +22,3 @@ public class SecurityContextService {
         return currentUser().getUserCode();
     }
 }
-
